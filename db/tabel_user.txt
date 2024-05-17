@@ -1,0 +1,285 @@
+IMPORTANT NOTICE:
+Before implementing the generated script, we highly recommend a comprehensive review and optimization
+of the code for both security and accuracy. Your meticulous attention to detail plays a crucial role in 
+ensuring a secure and efficient script.
+
+
+// ===================== MySQL Create Table Syntax ===================== //
+CREATE TABLE IF NOT EXISTS `tabel_user` (
+	id INT(11) AUTO_INCREMENT,
+	username VARCHAR(128) NOT NULL,
+	password VARCHAR(128) NOT NULL,
+	login_terakhir TIMESTAMP NOT NULL,
+	PRIMARY KEY (`id`)
+);
+
+
+
+
+// ===================== HTML Get Started with Bootstrap v5.3 ===================== //
+HTML form script use Bootstrap v5.3 CSS Framework. Place the <link> tag in the <head> for our CSS,
+and the <script> tag for our JavaScript bundle (including Popper for positioning dropdowns, poppers,
+and tooltips) before the closing </body>.
+
+
+<!doctype html>
+<html lang='en'>
+	<head>
+		<meta charset='utf-8'>
+		<meta name='viewport' content='width=device-width, initial-scale=1'>
+		<title>PAGE_TITLE</title>
+		<link href='dir_css/bootstrap.min.css' rel='stylesheet' crossorigin='anonymous'>
+	</head>
+	<body>
+		<!-- HTML FORM SYNTX HERE -->
+		<script src='dir_js/bootstrap.bundle.min.js' crossorigin='anonymous'></script>
+	</body>
+</html>
+
+
+
+// ===================== HTML Form Syntax ===================== //
+<form method='POST' action='dir_actions/tabel_user.php'>
+	
+	<div class="mb-3">
+		<label for="is_Id" class="form-label">Id</label>
+		<input name="is_Id" type="text" class="form-control" id="is_Id" value="" >
+	</div>
+	
+	<div class="mb-3">
+		<label for="is_Username" class="form-label">Username</label>
+		<input name="is_Username" type="text" class="form-control" id="is_Username" value="" >
+	</div>
+	
+	<div class="mb-3">
+		<label for="is_Password" class="form-label">Password</label>
+		<input name="is_Password" type="text" class="form-control" id="is_Password" value="" >
+	</div>
+	
+	<div class="mb-3">
+		<label for="is_LoginTerakhir" class="form-label">Login Terakhir</label>
+		<input name="is_LoginTerakhir" type="text" class="form-control" id="is_LoginTerakhir" value="" >
+	</div>
+
+	<button type="submit" class="btn btn-primary">Submit</button>
+
+</form>
+
+// ===================== PHP: Save password and handle user login (function-template) ===================== //
+<?php
+// note: When adding a new user to the database, always secure the password by hashing it using the 
+// password_hash() function before storing it in the table. 
+
+// example: $hashedPassword = password_hash($password, PASSWORD_BCRYPT);
+
+
+// Function to handle user login
+function loginUser($username, $password, $pdo){
+
+	$stmt = $pdo->prepare("SELECT * FROM users WHERE username = :username");
+	$stmt->bindParam(':username', $username, PDO::PARAM_STR);
+	$stmt->execute();
+
+	$user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+	if ($user && password_verify($password, $user['password'])) {
+		// Password is correct
+		// Create session
+		session_start();
+		$_SESSION['user_id'] = $user['id'];
+		$_SESSION['username'] = $user['username'];
+
+		// Set cookie (optional)
+		$cookieExpire = time() + 30 * 24 * 60 * 60; // 30 days
+		setcookie('user_id', $user['id'], $cookieExpire, '/');
+		setcookie('username', $user['username'], $cookieExpire, '/');
+
+		return true;
+	} else {
+		// Invalid login
+		return false;
+	}
+}
+
+// Example usage: function loginUser
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+	$username = $_POST['username'];
+	$password = $_POST['password'];
+
+	if (loginUser($username, $password, $pdo)) {
+		// Redirect to a secure page after successful login
+		header('Location: secure_page.php');
+		exit();
+	} else {
+		// Display an error message or redirect to a login page
+		echo "Invalid login credentials";
+	}
+}
+?>
+
+// ===================== PHP: Database Connector ===================== //
+<?php 
+//error_reporting(0);
+//setlocale(LC_ALL, 'en_US.UTF-8');
+//date_default_timezone_set('America/New_York');
+
+$db_host = 'hostname';
+$db_name = 'tablename';
+$db_user = 'username';
+$db_pasw = 'password';
+
+try {
+	$pdo = new PDO("mysql:host={$db_host};dbname={$db_name}", $db_user, $db_pasw);
+	$pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+} catch(PDOException $e) {
+	echo $e->getMessage();
+}
+?>
+
+
+
+// ===================== PHP: Create (Insert) Data ===================== //
+<?php
+if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+	$id = $_POST['is_Id']; 
+	$username = $_POST['is_Username']; 
+	$password = $_POST['is_Password']; 
+	$login_terakhir = $_POST['is_LoginTerakhir'];
+	try {
+		$sql = "INSERT INTO tabel_user (
+					id, 
+					username, 
+					password, 
+					login_terakhir
+				) VALUES (
+					:id, 
+					:username, 
+					:password, 
+					:login_terakhir
+				)";
+
+		$stmt = $pdo->prepare($sql);
+		$stmt->bindParam(':id', $id, PDO::PARAM_INT); 
+		$stmt->bindParam(':username', $username, PDO::PARAM_STR); 
+		$stmt->bindParam(':password', $password, PDO::PARAM_STR); 
+		$stmt->bindParam(':login_terakhir', $login_terakhir, PDO::PARAM_STR);
+		$stmt->execute();
+		header('location: ../index.php');
+		exit();
+	} catch (PDOException $e) {
+		echo "Error: " . $e->getMessage();
+	}
+}
+?>
+
+
+
+// ===================== PHP: Read (Select) Data ===================== //
+<table class="table">
+	<thead>
+		<tr>
+			<th scope="col">Id</th>
+			<th scope="col">Username</th>
+			<th scope="col">Password</th>
+			<th scope="col">Login Terakhir</th>
+		</tr>
+	</thead>
+	<tbody>
+		<?php
+		try {
+			$stmt = $pdo->prepare("SELECT * FROM tabel_user");
+			$stmt->execute();
+
+			$result = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+			foreach ($result as $row) {
+				echo "<tr>";
+				echo "<td>" . htmlspecialchars($row['id']) . "</td>";
+				echo "<td>" . htmlspecialchars($row['username']) . "</td>";
+				echo "<td>" . htmlspecialchars($row['password']) . "</td>";
+				echo "<td>" . htmlspecialchars($row['login_terakhir']) . "</td>";
+				echo "</tr>";
+			}
+		} catch (PDOException $e) {
+			echo "Error: " . $e->getMessage();
+		}
+		?>
+	</tbody>
+</table>
+
+
+
+// ===================== PHP: Read (Select) Single Row Data ===================== //
+$id_to_select = 1;
+
+$stmt = $pdo->prepare("SELECT * FROM tabel_user WHERE id = :id");
+$stmt->bindParam(':id', $id_to_select, PDO::PARAM_INT);
+$stmt->execute();
+$row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+if ( $row ) {
+	$id = $row['id'];
+	$username = $row['username'];
+	$password = $row['password'];
+	$login_terakhir = $row['login_terakhir'];
+} else {
+	echo "Data not found.";
+}
+
+
+
+// ===================== PHP: Update Data ===================== //
+<?php
+if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+	$id = $_POST['is_Id']; 
+	$username = $_POST['is_Username']; 
+	$password = $_POST['is_Password']; 
+	$login_terakhir = $_POST['is_LoginTerakhir'];
+	try {
+		$sql = "UPDATE tabel_user SET 
+					id = :id, 
+					username = :username, 
+					password = :password, 
+					login_terakhir = :login_terakhir
+				WHERE id = :id";
+
+		$stmt = $pdo->prepare($sql);
+		$stmt->bindParam(':id', $id, PDO::PARAM_INT); 
+		$stmt->bindParam(':username', $username, PDO::PARAM_STR); 
+		$stmt->bindParam(':password', $password, PDO::PARAM_STR); 
+		$stmt->bindParam(':login_terakhir', $login_terakhir, PDO::PARAM_STR);
+		$stmt->execute();
+		header('location: ../index.php');
+		exit();
+	} catch (PDOException $e) {
+		echo "Error: " . $e->getMessage();
+	}
+}
+?>
+
+
+
+// ===================== PHP: Delete Data ===================== //
+<?php
+if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+	$id = $_POST['is_Id'];
+	try {
+		$stmt = $pdo->prepare("DELETE FROM tabel_user WHERE id = :id");
+		$stmt->bindParam(':id', $id, PDO::PARAM_INT);
+
+		$stmt->execute();
+		header('location: ../index.php');
+		exit();
+	} catch (PDOException $e) {
+		echo "Error: " . $e->getMessage();
+	}
+}
+?>
+
+
+
+--------------------------------------------------
+Generated using PHP MySQL(PDO) CRUD Generator
+Crafted with care by M. Fahri | Connect with me: [Facebook](https://www.facebook.com/fhahry.x)
+Thank you for choosing and using our Chrome Extension!
+--------------------------------------------------
